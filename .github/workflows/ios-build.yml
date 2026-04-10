@@ -23,14 +23,21 @@ jobs:
         run: flutter pub get
 
       - name: "Build iOS - ADMIN"
-        run: flutter build ios --release --no-codesign -t lib/main_admin.dart
+        run: |
+          flutter build ios --release --no-codesign -t lib/main_admin.dart
+          mkdir -p build/ios/iphoneos/Admin-Payload/Payload
+          mv build/ios/iphoneos/Runner.app build/ios/iphoneos/Admin-Payload/Payload/
+          cd build/ios/iphoneos/Admin-Payload && zip -r ../SlimFitness-Admin.ipa Payload
 
       - name: "Build iOS - MEMBER"
-        run: flutter build ios --release --no-codesign -t lib/main_member.dart
+        run: |
+          flutter build ios --release --no-codesign -t lib/main_member.dart
+          mkdir -p build/ios/iphoneos/Member-Payload/Payload
+          mv build/ios/iphoneos/Runner.app build/ios/iphoneos/Member-Payload/Payload/
+          cd build/ios/iphoneos/Member-Payload && zip -r ../SlimFitness-Member.ipa Payload
 
       - name: "Upload Artifacts"
         uses: actions/upload-artifact@v4
         with:
-          name: SlimFitness-Elite-iOS-Builds
-          path: |
-            build/ios/iphoneos/Runner.app
+          name: SlimFitness-Elite-IPAs
+          path: build/ios/iphoneos/*.ipa
