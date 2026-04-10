@@ -39,6 +39,12 @@ jobs:
       - name: "Build iOS Simulator - MEMBER"
         run: |
           flutter build ios --simulator --no-codesign -t lib/main_member.dart
+          # Debug: List all files if the build folder doesn't exist
+          if [ ! -d "build/ios/iphonesimulator/Runner.app" ]; then
+            echo "Build directory not found! Debugging structure..."
+            ls -R build/ios
+          fi
+          # Zip the simulator build
           cd build/ios/iphonesimulator && zip -r ../../SlimFitness-Member-Simulator.zip Runner.app
 
       - name: "Upload Artifacts"
