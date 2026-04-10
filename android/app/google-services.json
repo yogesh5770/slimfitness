@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1076780710773",
+    "project_id": "slimfitness-8039d",
+    "storage_bucket": "slimfitness-8039d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1076780710773:android:92a98de56f8359ec87713c",
+        "android_client_info": {
+          "package_name": "com.slimfitness.admin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCXqPY9uJoZzePyyA0PrHeqfSju5UzcJpQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1076780710773:android:a11315ff0b6f876987713c",
+        "android_client_info": {
+          "package_name": "com.slimfitness.member"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCXqPY9uJoZzePyyA0PrHeqfSju5UzcJpQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
