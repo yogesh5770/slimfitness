@@ -44,13 +44,13 @@ jobs:
             echo "Build directory not found! Debugging structure..."
             ls -R build/ios
           fi
-          # Zip the simulator build
-          cd build/ios/iphonesimulator && zip -r ../../SlimFitness-Member-Simulator.zip Runner.app
+          # Zip the simulator build (Fixed Path to Root)
+          cd build/ios/iphonesimulator && zip -r ../../../SlimFitness-Member-Simulator.zip Runner.app
 
       - name: "Upload Artifacts"
         uses: actions/upload-artifact@v4
         with:
-          name: SlimFitness-Elite-IPAs
+          name: SlimFitness-V2-Simulator-Included
           path: |
             build/ios/iphoneos/*.ipa
             *.zip
