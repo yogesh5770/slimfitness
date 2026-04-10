@@ -2,8 +2,8 @@
 # This allows you to build iOS apps from Windows using Cloud Macs.
 
 workflows:
-  ios-build:
-    name: SlimFitness iOS Build
+  ios-admin:
+    name: SlimFitness ADMIN iOS
     instance_type: mac_mini_m1
     max_build_duration: 60
     environment:
@@ -14,8 +14,27 @@ workflows:
         script: flutter pub get
       - name: Build iOS
         script: |
-          # Unsigned build for Windows users
-          flutter build ios --release --no-codesign
+          flutter build ios --release --no-codesign -t lib/main_admin.dart
+    artifacts:
+      - build/ios/iphoneos/*.app
+    publishing:
+      email:
+        recipients:
+          - slimfitness@gmail.com
+
+  ios-member:
+    name: SlimFitness MEMBER iOS
+    instance_type: mac_mini_m1
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      xcode: latest
+    scripts:
+      - name: Fetch Dependencies
+        script: flutter pub get
+      - name: Build iOS
+        script: |
+          flutter build ios --release --no-codesign -t lib/main_member.dart
     artifacts:
       - build/ios/iphoneos/*.app
     publishing:
