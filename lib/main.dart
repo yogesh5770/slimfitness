@@ -1,23 +1,19 @@
-import 'firebase_options_manual.dart';
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // ELITE SAFE BOOT: Prevent White Screen via 5-second initialization watchdog
+  // ELITE BOOT LOGIC: Run App immediately to show 'Loading' state while Firebase initializes
+  runApp(const SlimFitnessApp());
+
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     ).timeout(const Duration(seconds: 5));
 
     await ServerTimeService().init().timeout(const Duration(seconds: 5));
-    
     print("ELITE: System Initialization Successful.");
   } catch (e) {
     print("ELITE ERROR: Safe Boot triggered. Initialization failed: $e");
-    // We proceed to runApp anyway to show the Splash/Login screen instead of white
   }
-
-  runApp(const SlimFitnessApp());
 }
 
 class SlimFitnessApp extends StatelessWidget {

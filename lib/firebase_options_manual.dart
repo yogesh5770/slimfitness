@@ -32,6 +32,6 @@ class DefaultFirebaseOptions {
     projectId: 'slimfit-5d2f6',
     databaseURL: 'https://slimfit-5d2f6-default-rtdb.firebaseio.com',
     storageBucket: 'slimfit-5d2f6.firebasestorage.app',
-    iosBundleId: 'com.slimfitness.admin',
+    iosBundleId: 'com.slimfitness.slimFitnessFlutter',
   );
 }
