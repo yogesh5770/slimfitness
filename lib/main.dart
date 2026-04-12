@@ -1,14 +1,22 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'ai_coach_view.dart';
-import 'splash_view.dart';
-import 'server_time_service.dart';
+import 'firebase_options_manual.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  ServerTimeService().init();
+  
+  // ELITE SAFE BOOT: Prevent White Screen via 5-second initialization watchdog
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    ).timeout(const Duration(seconds: 5));
+
+    await ServerTimeService().init().timeout(const Duration(seconds: 5));
+    
+    print("ELITE: System Initialization Successful.");
+  } catch (e) {
+    print("ELITE ERROR: Safe Boot triggered. Initialization failed: $e");
+    // We proceed to runApp anyway to show the Splash/Login screen instead of white
+  }
+
   runApp(const SlimFitnessApp());
 }
 

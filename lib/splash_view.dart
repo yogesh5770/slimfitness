@@ -43,44 +43,88 @@ class _SplashViewState extends State<SplashView> {
   }
 
   void _navigateToNext() async {
-    await Future.delayed(const Duration(milliseconds: 3000));
-    if (!mounted) return;
+    // ELITE WATCHDOG: Total maximum Splash duration is 6 seconds
+    Timer(const Duration(seconds: 6), () {
+      if (mounted) {
+        print("ELITE: Splash Watchdog Triggered. Forcing Navigation.");
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => LoginView(isAdminEntryPoint: widget.isAdminEntryPoint))
+        );
+      }
+    });
 
-    final dbRef = FirebaseDatabase.instance.ref();
-    final auth = FirebaseAuth.instance;
+    try {
+      await Future.delayed(const Duration(milliseconds: 3000));
+      if (!mounted) return;
 
-    // LEVEL 0: ANTI-CHEAT TIME SYNC
-    if (ServerTimeService().offset.abs() > 300000) {
-      if (mounted) Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const TimeErrorView()));
-      return;
-    }
+      final dbRef = FirebaseDatabase.instance.ref();
+      final auth = FirebaseAuth.instance;
 
-    // LEVEL 1: Firebase Auth Persistence (Aggressive polling)
-    int waitMs = 0;
-    while (auth.currentUser == null && waitMs < 1500) {
-      await Future.delayed(const Duration(milliseconds: 250));
-      waitMs += 250;
-    }
+      // LEVEL 0: ANTI-CHEAT TIME SYNC (5s Timeout)
+      try {
+        if (ServerTimeService().offset.abs() > 300000) {
+          if (mounted) Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const TimeErrorView()));
+          return;
+        }
+      } catch (e) {
+        print("ELITE: Time sync error, bypassing check: $e");
+      }
 
-    final currentUser = auth.currentUser;
-    if (currentUser != null) {
-      final userSnapshot = await dbRef.child('users/${currentUser.uid}').get();
-      if (userSnapshot.exists) {
-        final userData = userSnapshot.value as Map<dynamic, dynamic>;
-        final String role = userData['role'] as String? ?? 'member';
-        final String status = userData['status'] as String? ?? 'pending';
+      // LEVEL 1: Firebase Auth Persistence (Aggressive polling)
+      int waitMs = 0;
+      while (auth.currentUser == null && waitMs < 1500) {
+        await Future.delayed(const Duration(milliseconds: 250));
+        waitMs += 250;
+      }
 
-        // Fix: Ensure Owner always has access to Admin Flavor
-        final bool isOwner = currentUser.email == 'slimfitness@gmail.com';
-        final bool isCorrectFlavor = (widget.isAdminEntryPoint && (role == 'admin' || isOwner)) || 
-                                     (!widget.isAdminEntryPoint && role == 'member');
+      final currentUser = auth.currentUser;
+      if (currentUser != null) {
+        print("ELITE: Found auth user, checking data...");
+        final userSnapshot = await dbRef.child('users/${currentUser.uid}').get().timeout(const Duration(seconds: 5));
+        if (userSnapshot.exists) {
+          final userData = userSnapshot.value as Map<dynamic, dynamic>;
+          final String role = userData['role'] as String? ?? 'member';
+          final String status = userData['status'] as String? ?? 'pending';
 
-        if (isCorrectFlavor) {
-          if (role == 'admin' || isOwner) {
+          final bool isOwner = currentUser.email == 'slimfitness@gmail.com';
+          final bool isCorrectFlavor = (widget.isAdminEntryPoint && (role == 'admin' || isOwner)) || 
+                                       (!widget.isAdminEntryPoint && role == 'member');
+
+          if (isCorrectFlavor) {
+            if (role == 'admin' || isOwner) {
+              Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const AdminDashboard()));
+              return;
+            } else {
+              if (status == 'approved') {
+                Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const MemberDashboard()));
+              } else {
+                Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const PendingApprovalView()));
+              }
+              return;
+            }
+          }
+        }
+      }
+
+      // LEVEL 2: Cloud Device Binding (Handshake Recovery with 5s Timeout)
+      print("ELITE: Performing cloud device handshake...");
+      final deviceIdBase = await _getDeviceId();
+      final sessionSnapshot = await dbRef.child('device_sessions/$deviceIdBase').get().timeout(const Duration(seconds: 5));
+      
+      if (sessionSnapshot.exists) {
+        final sessionData = sessionSnapshot.value as Map<dynamic, dynamic>;
+        final role = sessionData['role'] as String?;
+        final sessionUid = sessionData['uid'] as String?;
+        final String email = sessionData['email'] as String? ?? '';
+
+        if (sessionUid != null) {
+          if (widget.isAdminEntryPoint && (role == 'admin' || email == 'slimfitness@gmail.com')) {
+            print("ELITE: Pinning recovered Admin session.");
             Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const AdminDashboard()));
             return;
-          } else {
-            if (status == 'approved') {
+          } else if (!widget.isAdminEntryPoint && role == 'member') {
+            final statusSnapshot = await dbRef.child('users/$sessionUid/status').get().timeout(const Duration(seconds: 5));
+            if (statusSnapshot.value == 'approved') {
               Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const MemberDashboard()));
             } else {
               Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const PendingApprovalView()));
@@ -89,40 +133,16 @@ class _SplashViewState extends State<SplashView> {
           }
         }
       }
+    } catch (e) {
+      print("ELITE HANDSHAKE ERROR: $e");
     }
 
-    // LEVEL 2: Cloud Device Binding (ELITE HANDSHAKE RECOVERY)
-    final deviceIdBase = await _getDeviceId();
-    final sessionSnapshot = await dbRef.child('device_sessions/$deviceIdBase').get();
-    
-    if (sessionSnapshot.exists) {
-      final sessionData = sessionSnapshot.value as Map<dynamic, dynamic>;
-      final role = sessionData['role'] as String?;
-      final sessionUid = sessionData['uid'] as String?;
-      final String email = sessionData['email'] as String? ?? '';
-
-      // ELITE PINNING: If device belongs to Owner, trust the sessionUid immediately across updates
-      if (sessionUid != null) {
-        if (widget.isAdminEntryPoint && (role == 'admin' || email == 'slimfitness@gmail.com')) {
-          print("ELITE: Session Pinning Recovered Admin Session for $email");
-          Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const AdminDashboard()));
-          return;
-        } else if (!widget.isAdminEntryPoint && role == 'member') {
-          final statusSnapshot = await dbRef.child('users/$sessionUid/status').get();
-          if (statusSnapshot.value == 'approved') {
-            Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const MemberDashboard()));
-          } else {
-            Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const PendingApprovalView()));
-          }
-          return;
-        }
-      }
+    // Default to login if anything fails or times out
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => LoginView(isAdminEntryPoint: widget.isAdminEntryPoint))
+      );
     }
-
-    // Default to login
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => LoginView(isAdminEntryPoint: widget.isAdminEntryPoint))
-    );
   }
 
   @override
