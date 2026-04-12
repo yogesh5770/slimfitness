@@ -28,16 +28,20 @@ jobs:
         run: flutter pub get
 
       - name: "Build Android - ADMIN"
-        run: flutter build apk --release -t lib/main_admin.dart --build-number=$GITHUB_RUN_NUMBER
+        run: |
+          flutter build apk --release -t lib/main_admin.dart --build-number=$GITHUB_RUN_NUMBER
+          mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/SlimFitness-Admin.apk
 
       - name: "Build Android - MEMBER"
-        run: flutter build apk --release -t lib/main_member.dart --build-number=$GITHUB_RUN_NUMBER
+        run: |
+          flutter build apk --release -t lib/main_member.dart --build-number=$GITHUB_RUN_NUMBER
+          mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/SlimFitness-Member.apk
 
       - name: "Upload APK Artifacts"
         uses: actions/upload-artifact@v4
         with:
           name: SlimFitness-Android-APKs
-          path: build/app/outputs/flutter-apk/*.apk
+          path: build/app/outputs/flutter-apk/SlimFitness-*.apk
 
   build-ios:
     name: "Build iOS IPAs"
