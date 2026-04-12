@@ -14,19 +14,26 @@ class StepService {
 
   StreamSubscription<StepCount>? _stepCountStream;
   int _todaySteps = 0;
+  int? _startingSteps;
   double _multiplier = 0.04; // Default elite average
 
   int get todaySteps => _todaySteps;
   double get burnedCalories => _todaySteps * _multiplier;
 
   Future<void> init() async {
-    // 1. Fetch personalization multiplier from Cloud
     final uid = _auth.currentUser?.uid;
-    if (uid != null) {
-      final snap = await _db.child('users/$uid/vitals/stepMultiplier').get();
-      if (snap.exists) {
-        _multiplier = (snap.value as num).toDouble();
-      }
+    if (uid == null) return;
+
+    final now = DateTime.now();
+    final dateKey = "${now.year}-${now.month}-${now.day}";
+
+    // 1. Fetch personalization multiplier and today's starting offset
+    final userSnap = await _db.child('users/$uid/vitals/stepMultiplier').get();
+    if (userSnap.exists) _multiplier = (userSnap.value as num).toDouble();
+
+    final stepSnap = await _db.child('steps/$uid/$dateKey/startingSteps').get();
+    if (stepSnap.exists) {
+      _startingSteps = (stepSnap.value as num).toInt();
     }
 
     // 2. Request Permission
@@ -36,15 +43,10 @@ class StepService {
     }
   }
 
-  void updateMultiplier(double newFactor) {
-    _multiplier = newFactor;
-  }
+  void updateMultiplier(double newFactor) => _multiplier = newFactor;
 
   void _startListening() {
-    _stepCountStream = Pedometer.stepCountStream.listen(
-      _onStepCount,
-      onError: _onStepCountError,
-    );
+    _stepCountStream = Pedometer.stepCountStream.listen(_onStepCount, onError: _onStepCountError);
   }
 
   void _onStepCount(StepCount event) async {
@@ -54,14 +56,18 @@ class StepService {
     final now = DateTime.now();
     final dateKey = "${now.year}-${now.month}-${now.day}";
 
-    // Note: Pedometer returns steps since boot. We need to handle daily reset logic.
-    // For simplicity in this Elite version, we store the raw count and sync it.
-    // In a full production build, we'd subtract the 'start of day' offset.
-    
-    _todaySteps = event.steps; // Assuming the plugin handles daily reset or we handle it via DB offset
+    // Logic: Pedometer returns steps since boot.
+    // If we don't have a starting point for today, set this first count as the base.
+    if (_startingSteps == null || _startingSteps == 0) {
+      _startingSteps = event.steps;
+      await _db.child('steps/$uid/$dateKey/startingSteps').set(_startingSteps);
+    }
+
+    _todaySteps = event.steps - _startingSteps!;
+    if (_todaySteps < 0) _todaySteps = 0; // Guard against reboot resets
     
     // Sync to Cloud
-    await _db.child('steps/$uid/$dateKey').set({
+    await _db.child('steps/$uid/$dateKey').update({
       'count': _todaySteps,
       'caloriesBurned': burnedCalories,
       'lastUpdate': ServerValue.timestamp,
