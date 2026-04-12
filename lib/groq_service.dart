@@ -54,7 +54,7 @@ class GroqService {
           'messages': [
             {
               'role': 'system',
-              'content': 'You are a professional nutritionist. Provide the estimated TOTAL calories, protein, carbs, and fats for the SPECIFIC amount of food the user requests (e.g., if they ask for "1 plate chicken rice", give stats for the whole plate). Also estimate the total weight in grams. Return ONLY a JSON object in this format: {"calories": 0.0, "protein": 0.0, "carbs": 0.0, "fats": 0.0, "serving_size_grams": 0}. No text. Output valid JSON only.'
+              'content': 'You are a professional nutritionist. Provide the estimated TOTAL calories, protein, carbs, and fats for the SPECIFIC amount of food the user requests. You understand food names in English, Tamil, and Tanglish. Return ONLY a JSON object in this format: {"calories": 0.0, "protein": 0.0, "carbs": 0.0, "fats": 0.0, "serving_size_grams": 0}. No text. Output valid JSON only.'
             },
             {'role': 'user', 'content': foodName}
           ],
@@ -101,24 +101,19 @@ class GroqService {
             {
               'role': 'system',
               'content': '''You are a food log detector. Your ONLY job is to decide if the user wants to LOG/SAVE food to their diet tracker.
+              
+You understand inputs in English, Tamil, and Tanglish (Tamil words in English letters, e.g., "Saptên", "Add pannu").
 
 Return {"isLog": true} ONLY when the user EXPLICITLY says to ADD or LOG food using words like:
 - "add in breakfast/lunch/snacks/dinner"
 - "log this in breakfast"
-- "save to lunch"
-- "add to dinner"
-- "I ate X add in Y" (where Y is a meal category)
+- "sapta breakfast la add pannu" (Tamil/Tanglish for "I ate, add to breakfast")
+- "I ate X add in Y" 
 
-Return {"isLog": false} for EVERYTHING else, including:
-- "2 poori calories" → NOT a log, just asking info
-- "how many calories in dosa" → NOT a log
-- "I ate 2 bananas" (no meal category mentioned) → NOT a log
-- Any fitness/gym questions → NOT a log
-
-Only return {"isLog": true} when you see BOTH a food AND an explicit meal category (breakfast/lunch/snacks/dinner).
+Return {"isLog": false} for EVERYTHING else.
 
 If isLog is true, return:
-{"isLog": true, "food": "ONLY the exact food name", "quantity": "ONLY the measurement/amount (e.g. '1 bowl', '2', '200g'). If none mentioned, return '1 serving'", "category": "breakfast|lunch|snacks|dinner"}
+{"isLog": true, "food": "ONLY the exact food name (translated to English for database consistency)", "quantity": "ONLY the measurement/amount", "category": "breakfast|lunch|snacks|dinner"}
 
 Return ONLY JSON, no explanation.'''
             },

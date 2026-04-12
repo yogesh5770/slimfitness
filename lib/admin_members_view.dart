@@ -307,24 +307,36 @@ class _AdminMembersViewState extends State<AdminMembersView> {
                 duration: Duration(milliseconds: 400 + (index * 100)),
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(color: const Color(0xFF161B22), borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.white.withOpacity(0.03))),
-                  child: ListTile(
-                    leading: CircleAvatar(backgroundColor: Colors.black26, child: Text(firstChar, style: TextStyle(color: Theme.of(context).primaryColor))),
-                    title: Text(name.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.1)),
-                    subtitle: Text(email, style: const TextStyle(color: Colors.white24, fontSize: 10)),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildActionButton(Icons.show_chart, Colors.cyanAccent, () => Navigator.push(context, MaterialPageRoute(builder: (_) => WeightChartView(userId: uid)))),
-                        const SizedBox(width: 6),
-                        _buildActionButton(Icons.restaurant_menu_rounded, const Color(0xFF10B981), () => _showAssignDiet(uid, name)),
-                        const SizedBox(width: 6),
-                        _buildActionButton(Icons.insights_rounded, const Color(0xFF8B5CF6), () => _viewAssignedWorkouts(uid, name)),
-                        const SizedBox(width: 6),
-                        _buildActionButton(Icons.add_task_rounded, Colors.white24, () => _showAddPersonalWorkout(uid, name)),
-                      ],
-                    ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(backgroundColor: Colors.black26, child: Text(firstChar, style: TextStyle(color: Theme.of(context).primaryColor))),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(name.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.1, fontSize: 14)),
+                                Text(email, style: const TextStyle(color: Colors.white24, fontSize: 10)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _buildActionButton(Icons.show_chart, Colors.cyanAccent, () => Navigator.push(context, MaterialPageRoute(builder: (_) => WeightChartView(userId: uid)))),
+                          _buildActionButton(Icons.restaurant_menu_rounded, const Color(0xFF10B981), () => _showAssignDiet(uid, name)),
+                          _buildActionButton(Icons.insights_rounded, const Color(0xFF8B5CF6), () => _viewAssignedWorkouts(uid, name)),
+                          _buildActionButton(Icons.add_task_rounded, Colors.white24, () => _showAddPersonalWorkout(uid, name)),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               );
