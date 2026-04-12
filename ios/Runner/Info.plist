@@ -18,6 +18,14 @@
 	<string>slim_fitness_flutter</string>
 	<key>NSNotificationsUsageDescription</key>
 	<string>SlimFitness uses notifications to provide you with elite workout reminders and important broadcast alerts from the trainer.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>SlimFitness requires microphone access for the AI Voice Coach to log your meals via voice command.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>SlimFitness uses speech recognition to accurately parse your meal logs in Tamil and English.</string>
+	<key>NSMotionUsageDescription</key>
+	<string>SlimFitness requires motion access to track your daily steps and metabolic calorie burn.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>SlimFitness uses bluetooth to connect with elite fitness tracking hardware if available.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>CFBundlePackageType</key>
