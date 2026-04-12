@@ -1,45 +1,96 @@
 {
   "project_info": {
-    "project_number": "1076780710773",
-    "project_id": "slimfitness-8039d",
-    "storage_bucket": "slimfitness-8039d.firebasestorage.app"
+    "project_number": "301096952142",
+    "firebase_url": "https://slimfit-5d2f6-default-rtdb.firebaseio.com",
+    "project_id": "slimfit-5d2f6",
+    "storage_bucket": "slimfit-5d2f6.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1076780710773:android:92a98de56f8359ec87713c",
+        "mobilesdk_app_id": "1:301096952142:android:512567cb1558d5b71efe1f",
         "android_client_info": {
           "package_name": "com.slimfitness.admin"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "301096952142-blta9jjubb7b8jf9mged7l373pbjflsa.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.slimfitness.admin",
+            "certificate_hash": "0951c4850001186e5aaf6a0af05fedb54bf5bd97"
+          }
+        },
+        {
+          "client_id": "301096952142-ch5ceb0ntj8juq4vst4v9u6mm4c101e8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyCXqPY9uJoZzePyyA0PrHeqfSju5UzcJpQ"
+          "current_key": "AIzaSyBbIgFlHeJGgfBscd44CacBCfXYSKQ6jG4"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "301096952142-ch5ceb0ntj8juq4vst4v9u6mm4c101e8.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "301096952142-60q30ms8eif81ouit12qgghq9blf2uke.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.slimfitness.member"
+              }
+            }
+          ]
         }
       }
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1076780710773:android:a11315ff0b6f876987713c",
+        "mobilesdk_app_id": "1:301096952142:android:f7768057e340387e1efe1f",
         "android_client_info": {
           "package_name": "com.slimfitness.member"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "301096952142-i9ll6oarvhu3nm8v2f69f3frh88nv2e2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.slimfitness.member",
+            "certificate_hash": "0951c4850001186e5aaf6a0af05fedb54bf5bd97"
+          }
+        },
+        {
+          "client_id": "301096952142-ch5ceb0ntj8juq4vst4v9u6mm4c101e8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyCXqPY9uJoZzePyyA0PrHeqfSju5UzcJpQ"
+          "current_key": "AIzaSyBbIgFlHeJGgfBscd44CacBCfXYSKQ6jG4"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "301096952142-ch5ceb0ntj8juq4vst4v9u6mm4c101e8.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "301096952142-60q30ms8eif81ouit12qgghq9blf2uke.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.slimfitness.member"
+              }
+            }
+          ]
         }
       }
     }

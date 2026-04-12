@@ -16,6 +16,9 @@ class ServerTimeService {
     });
   }
 
+  /// The raw difference between the local clock and the Firebase atomic clock
+  int get offset => _offset;
+
   /// Returns the synchronized Server Time in milliseconds since epoch
   int get currentTimeMillis => DateTime.now().millisecondsSinceEpoch + _offset;
 

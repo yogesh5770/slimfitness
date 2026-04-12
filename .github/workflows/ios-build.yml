@@ -44,7 +44,7 @@ jobs:
             echo "Build directory not found! Debugging structure..."
             ls -R build/ios
           fi
-          # Zip the simulator build (Fixed Path to Root)
+          # Zip the simulator build
           cd build/ios/iphonesimulator && zip -r ../../../SlimFitness-Member-Simulator.zip Runner.app
 
       - name: "Upload Artifacts"

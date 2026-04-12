@@ -4,9 +4,13 @@ import 'theme.dart';
 import 'splash_view.dart';
 import 'server_time_service.dart';
 
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'notification_service.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(); // Will uncomment when google-services is linked
+  await Firebase.initializeApp();
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   ServerTimeService().init();
   runApp(const SlimFitnessAdminApp());
 }

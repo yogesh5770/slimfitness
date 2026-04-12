@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:animate_do/animate_do.dart';
+import 'weight_chart_view.dart';
+import 'streak_service.dart';
 
 class AdminMembersView extends StatefulWidget {
   const AdminMembersView({super.key});
@@ -33,6 +35,58 @@ class _AdminMembersViewState extends State<AdminMembersView> {
         _extractWorkouts(value, list);
       }
     });
+  }
+
+  void _showAssignDiet(String uid, String memberName) {
+    final dietController = TextEditingController();
+    
+    // Fetch current diet to preload
+    _database.child('users/$uid/assigned_diet').get().then((snap) {
+      if (snap.exists) {
+        dietController.text = (snap.value as Map)['plan'] ?? '';
+      }
+    });
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF161B22),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text('DIET FOR ${memberName.toUpperCase()}', style: const TextStyle(letterSpacing: 1, fontWeight: FontWeight.bold, fontSize: 16)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Enter daily diet instructions, macro targets, or meal timings.', style: TextStyle(color: Colors.white38, fontSize: 10)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: dietController,
+              maxLines: 8,
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+              decoration: InputDecoration(
+                hintText: 'e.g., Morning: 4 Egg Whites...\nLunch: 100g Chicken...',
+                hintStyle: const TextStyle(color: Colors.white12),
+                filled: true, fillColor: Colors.black26,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981)), // Emerald Green for diet
+            onPressed: () async {
+              await _database.child('users/$uid/assigned_diet').set({
+                'plan': dietController.text.trim(),
+                'updatedAt': ServerValue.timestamp,
+              });
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: const Text('PUSH DIET', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showAddPersonalWorkout(String uid, String memberEmail) {
@@ -262,8 +316,12 @@ class _AdminMembersViewState extends State<AdminMembersView> {
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        _buildActionButton(Icons.show_chart, Colors.cyanAccent, () => Navigator.push(context, MaterialPageRoute(builder: (_) => WeightChartView(userId: uid)))),
+                        const SizedBox(width: 6),
+                        _buildActionButton(Icons.restaurant_menu_rounded, const Color(0xFF10B981), () => _showAssignDiet(uid, name)),
+                        const SizedBox(width: 6),
                         _buildActionButton(Icons.insights_rounded, const Color(0xFF8B5CF6), () => _viewAssignedWorkouts(uid, name)),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         _buildActionButton(Icons.add_task_rounded, Colors.white24, () => _showAddPersonalWorkout(uid, name)),
                       ],
                     ),

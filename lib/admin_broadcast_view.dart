@@ -50,9 +50,10 @@ class _BroadcastMessageViewState extends State<BroadcastMessageView> {
 
                 final Map<dynamic, dynamic> chatMap = snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
                 final messages = chatMap.values.map((v) => Map<String, dynamic>.from(v as Map)).toList();
-                messages.sort((a, b) => (a['timestamp'] as int? ?? 0).compareTo(b['timestamp'] as int? ?? 0));
+                messages.sort((a, b) => (b['timestamp'] as int? ?? 0).compareTo(a['timestamp'] as int? ?? 0));
 
                 return ListView.builder(
+                  reverse: true,
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {

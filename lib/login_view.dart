@@ -10,6 +10,7 @@ import 'admin_dashboard.dart';
 import 'member_dashboard.dart';
 import 'pending_approval_view.dart';
 import 'register_view.dart'; 
+import 'package:google_sign_in/google_sign_in.dart';
 
 class LoginView extends StatefulWidget {
   final bool isAdminEntryPoint;
@@ -87,10 +88,68 @@ class _LoginViewState extends State<LoginView> {
           }
         }
       }
-    }
- catch (e) {
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Login Error: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    setState(() => _isLoading = true);
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) {
+        setState(() => _isLoading = false);
+        return; // User canceled
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final auth = FirebaseAuth.instance;
+      final dbRef = FirebaseDatabase.instance.ref();
+      final deviceId = await _getDeviceId();
+
+      UserCredential userCred = await auth.signInWithCredential(credential);
+      final user = userCred.user;
+
+      if (user != null) {
+        // Save to Cloud Persistence
+        await dbRef.child('device_sessions/$deviceId').set({'uid': user.uid, 'role': 'member'});
+
+        // Check if user exists
+        final snapshot = await dbRef.child('users/${user.uid}').get();
+        if (!snapshot.exists) {
+          // New User
+          await dbRef.child('users/${user.uid}').set({
+            'name': user.displayName ?? 'Elite Member',
+            'email': user.email,
+            'status': 'pending',
+            'role': 'member',
+            'createdAt': ServerValue.timestamp,
+          });
+          if (!mounted) return;
+          Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const PendingApprovalView()));
+        } else {
+          // Existing User
+          final data = snapshot.value as Map<dynamic, dynamic>;
+          if (!mounted) return;
+          if (data['status'] == 'approved') {
+            Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const MemberDashboard()));
+          } else {
+            Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const PendingApprovalView()));
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Google Sign-In Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -144,7 +203,40 @@ class _LoginViewState extends State<LoginView> {
                               style: Theme.of(context).textTheme.titleLarge?.copyWith(letterSpacing: 2.5, fontWeight: FontWeight.w900, fontSize: 18),
                             ),
                             const SizedBox(height: 35),
-                            _buildLoginField(_emailController, 'Account Email', Icons.email_outlined),
+                            
+                            if (!widget.isAdminEntryPoint) ...[
+                              SizedBox(
+                                width: double.infinity,
+                                height: 50,
+                                child: ElevatedButton.icon(
+                                  onPressed: _isLoading ? null : _handleGoogleSignIn,
+                                  icon: Image.network(
+                                    'https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg',
+                                    height: 20,
+                                  ),
+                                  label: const Text('Continue with Google', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black, fontSize: 15)),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                                    elevation: 0,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 25),
+                              Row(
+                                children: [
+                                  Expanded(child: Divider(color: Colors.white.withOpacity(0.2))),
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 10),
+                                    child: Text('OR', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold)),
+                                  ),
+                                  Expanded(child: Divider(color: Colors.white.withOpacity(0.2))),
+                                ],
+                              ),
+                              const SizedBox(height: 25),
+                            ],
+
+                            _buildLoginField(_emailController, 'Account Email or Phone', Icons.email_outlined),
                             const SizedBox(height: 16),
                             _buildLoginField(_passwordController, 'Security Key', Icons.lock_outline, isPass: true),
                             const SizedBox(height: 35),

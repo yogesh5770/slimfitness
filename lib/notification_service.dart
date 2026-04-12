@@ -1,4 +1,12 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Handled automatically by OS, but can log or process data here.
+}
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -32,6 +40,33 @@ class NotificationService {
     await _notificationsPlugin
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
+
+    // FCM Settings
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+    await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+    // Upload Firebase Push Token
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      final token = await messaging.getToken();
+      if (token != null) {
+        await FirebaseDatabase.instance.ref('push_tokens/$uid').set(token);
+      }
+    }
+
+    // Foreground messages
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      if (message.notification != null) {
+        showNotification(
+          title: message.notification!.title ?? 'SlimFitness',
+          body: message.notification!.body ?? '',
+        );
+      }
+    });
   }
 
   Future<void> showNotification({required String title, required String body}) async {

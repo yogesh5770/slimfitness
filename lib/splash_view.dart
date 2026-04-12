@@ -10,6 +10,8 @@ import 'login_view.dart';
 import 'admin_dashboard.dart';
 import 'member_dashboard.dart';
 import 'pending_approval_view.dart';
+import 'time_error_view.dart';
+import 'server_time_service.dart';
 
 class SplashView extends StatefulWidget {
   final bool isAdminEntryPoint;
@@ -43,6 +45,17 @@ class _SplashViewState extends State<SplashView> {
     // Wait for Splash animation
     await Future.delayed(const Duration(milliseconds: 3000));
     if (!mounted) return;
+
+    // LEVEL 0: ANTI-CHEAT TIME SYNC
+    // If local clock is altered by more than 5 minutes (300,000ms), lock them out.
+    if (ServerTimeService().offset.abs() > 300000) {
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const TimeErrorView())
+        );
+      }
+      return;
+    }
 
     final dbRef = FirebaseDatabase.instance.ref();
     final auth = FirebaseAuth.instance;
