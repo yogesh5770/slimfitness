@@ -120,30 +120,43 @@ class _LoginViewState extends State<LoginView> {
       final user = userCred.user;
 
       if (user != null) {
-        // Save to Cloud Persistence
-        await dbRef.child('device_sessions/$deviceId').set({'uid': user.uid, 'role': 'member'});
+        final role = widget.isAdminEntryPoint ? 'admin' : 'member';
+        
+        // Save to Cloud Persistence (Elite Handshake)
+        await dbRef.child('device_sessions/$deviceId').set({'uid': user.uid, 'role': role});
 
         // Check if user exists
         final snapshot = await dbRef.child('users/${user.uid}').get();
         if (!snapshot.exists) {
           // New User
           await dbRef.child('users/${user.uid}').set({
-            'name': user.displayName ?? 'Elite Member',
+            'name': user.displayName ?? (widget.isAdminEntryPoint ? 'Elite Admin' : 'Elite Member'),
             'email': user.email,
-            'status': 'pending',
-            'role': 'member',
+            'status': widget.isAdminEntryPoint ? 'approved' : 'pending',
+            'role': role,
             'createdAt': ServerValue.timestamp,
           });
           if (!mounted) return;
-          Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const PendingApprovalView()));
+          if (widget.isAdminEntryPoint) {
+             Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const AdminDashboard()));
+          } else {
+             Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const PendingApprovalView()));
+          }
         } else {
           // Existing User
           final data = snapshot.value as Map<dynamic, dynamic>;
           if (!mounted) return;
-          if (data['status'] == 'approved') {
-            Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const MemberDashboard()));
+          final userRole = data['role'] as String? ?? 'member';
+          final userStatus = data['status'] as String? ?? 'pending';
+
+          if (widget.isAdminEntryPoint && userRole == 'admin') {
+             Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const AdminDashboard()));
+          } else if (!widget.isAdminEntryPoint && userRole == 'member' && userStatus == 'approved') {
+             Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const MemberDashboard()));
+          } else if (!widget.isAdminEntryPoint && userRole == 'member') {
+             Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const PendingApprovalView()));
           } else {
-            Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const PendingApprovalView()));
+             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Portal Mismatch: Use the correct flavor.')));
           }
         }
       }

@@ -36,46 +36,39 @@ class _SplashViewState extends State<SplashView> {
       rawId = iosDeviceInfo.identifierForVendor ?? 'unknown_device';
     } else if (Platform.isAndroid) {
       var androidDeviceInfo = await deviceInfo.androidInfo;
-      rawId = androidDeviceInfo.id; 
+      // Using combination for elite persistence across updates
+      rawId = "${androidDeviceInfo.brand}_${androidDeviceInfo.model}_${androidDeviceInfo.id}";
     }
     return rawId.replaceAll(RegExp(r'[.#$\[\]]'), '_');
   }
 
   void _navigateToNext() async {
-    // Wait for Splash animation
     await Future.delayed(const Duration(milliseconds: 3000));
     if (!mounted) return;
-
-    // LEVEL 0: ANTI-CHEAT TIME SYNC
-    // If local clock is altered by more than 5 minutes (300,000ms), lock them out.
-    if (ServerTimeService().offset.abs() > 300000) {
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const TimeErrorView())
-        );
-      }
-      return;
-    }
 
     final dbRef = FirebaseDatabase.instance.ref();
     final auth = FirebaseAuth.instance;
 
-    // LEVEL 1: Firebase Auth Persistence (Internal SQLite DB)
-    // Wait briefly for auth to initialize
+    // LEVEL 0: ANTI-CHEAT TIME SYNC
+    if (ServerTimeService().offset.abs() > 300000) {
+      if (mounted) Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const TimeErrorView()));
+      return;
+    }
+
+    // LEVEL 1: Firebase Auth Persistence
     int waitMs = 0;
-    while (auth.currentUser == null && waitMs < 1500) {
+    while (auth.currentUser == null && waitMs < 1000) {
       await Future.delayed(const Duration(milliseconds: 200));
       waitMs += 200;
     }
 
     final currentUser = auth.currentUser;
     if (currentUser != null) {
-      // Valid session found—verify role and status in the cloud
       final userSnapshot = await dbRef.child('users/${currentUser.uid}').get();
       if (userSnapshot.exists) {
         final userData = userSnapshot.value as Map<dynamic, dynamic>;
-        final role = userData['role'] as String?;
-        final status = userData['status'] as String? ?? 'pending';
+        final String role = userData['role'] as String? ?? 'member';
+        final String status = userData['status'] as String? ?? 'pending';
 
         final bool isCorrectFlavor = (widget.isAdminEntryPoint && role == 'admin') || 
                                      (!widget.isAdminEntryPoint && role == 'member');
@@ -96,7 +89,7 @@ class _SplashViewState extends State<SplashView> {
       }
     }
 
-    // LEVEL 2: Cloud Device Binding Fallback
+    // LEVEL 2: Cloud Device Binding (ELITE HANDSHAKE)
     final deviceIdBase = await _getDeviceId();
     final sessionSnapshot = await dbRef.child('device_sessions/$deviceIdBase').get();
     
@@ -105,17 +98,14 @@ class _SplashViewState extends State<SplashView> {
       final role = sessionData['role'] as String?;
       final sessionUid = sessionData['uid'] as String?;
 
-      final bool isCorrectFlavor = (widget.isAdminEntryPoint && role == 'admin') || 
-                                   (!widget.isAdminEntryPoint && role == 'member');
-
-      if (sessionUid != null && isCorrectFlavor) {
-        if (role == 'admin') {
+      // Auto-relogin if session exists in cloud but local auth is gone (common in updates)
+      if (sessionUid != null) {
+        if (widget.isAdminEntryPoint && role == 'admin') {
           Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const AdminDashboard()));
           return;
-        } else {
+        } else if (!widget.isAdminEntryPoint && role == 'member') {
           final statusSnapshot = await dbRef.child('users/$sessionUid/status').get();
-          final status = statusSnapshot.value as String?;
-          if (status == 'approved') {
+          if (statusSnapshot.value == 'approved') {
             Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const MemberDashboard()));
           } else {
             Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const PendingApprovalView()));
