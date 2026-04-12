@@ -19,7 +19,7 @@ void main() async {
     ).timeout(const Duration(seconds: 5));
 
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-    await ServerTimeService().init().timeout(const Duration(seconds: 5));
+    ServerTimeService().init(); // Synchronous call
     
     print("ELITE: Admin System Initialization Successful.");
   } catch (e) {

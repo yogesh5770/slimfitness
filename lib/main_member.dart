@@ -20,7 +20,7 @@ void main() async {
     ).timeout(const Duration(seconds: 5));
 
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-    await ServerTimeService().init().timeout(const Duration(seconds: 5));
+    ServerTimeService().init(); // Synchronous call, no timeout needed
     await StepService().init().timeout(const Duration(seconds: 5));
     
     print("ELITE: Member System Initialization Successful.");

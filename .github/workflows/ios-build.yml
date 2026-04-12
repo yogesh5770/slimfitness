@@ -62,19 +62,21 @@ jobs:
           export PROVISIONING_PROFILE_SPECIFIER=""
           
           # 1. Start build and ignore Flutter's post-build validation error
-          # If 'Xcode build done' appears in the log, we have our binary!
-          flutter build ios --release --no-codesign -t lib/main_admin.dart --build-number=$GITHUB_RUN_NUMBER || echo "Flutter validation error ignored. Verifying build artifacts..."
+          flutter build ios --release --no-codesign -t lib/main_admin.dart --build-number=$GITHUB_RUN_NUMBER || echo "Post-build warning ignored."
           
-          # 2. Package IPA if the .app folder was successfully generated
-          if [ -d "build/ios/iphoneos/Runner.app" ]; then
-            echo "SUCCESS: Runner.app found. Packaging Admin IPA..."
+          # 2. AUTO-DISCOVER the .app file (Reliability Layer)
+          APP_PATH=$(find build/ios -name "Runner.app" -type d | head -n 1)
+          
+          if [ -n "$APP_PATH" ]; then
+            echo "SUCCESS: Found app bundle at $APP_PATH. Packaging Admin IPA..."
             mkdir -p build/ios/iphoneos/Admin-Payload/Payload
-            cp -r build/ios/iphoneos/Runner.app build/ios/iphoneos/Admin-Payload/Payload/
+            cp -r "$APP_PATH" build/ios/iphoneos/Admin-Payload/Payload/
             cd build/ios/iphoneos/Admin-Payload && zip -r ../SlimFitness-Admin.ipa Payload
-            # Clean up for next flavor
-            rm -rf build/ios/iphoneos/Runner.app
+            # Cleanup for next flavor
+            rm -rf "$APP_PATH"
           else
-            echo "CRITICAL ERROR: Runner.app not found. Build truly failed."
+            echo "CRITICAL ERROR: Runner.app was not found anywhere in build/ios/"
+            find build/ios -maxdepth 4
             exit 1
           fi
 
@@ -85,16 +87,19 @@ jobs:
           export PROVISIONING_PROFILE_SPECIFIER=""
           
           # 1. Standard build
-          flutter build ios --release --no-codesign -t lib/main_member.dart --build-number=$GITHUB_RUN_NUMBER || echo "Flutter validation error ignored. Verifying build artifacts..."
+          flutter build ios --release --no-codesign -t lib/main_member.dart --build-number=$GITHUB_RUN_NUMBER || echo "Post-build warning ignored."
           
-          # 2. Package IPA
-          if [ -d "build/ios/iphoneos/Runner.app" ]; then
-            echo "SUCCESS: Runner.app found. Packaging Member IPA..."
+          # 2. AUTO-DISCOVER the .app file
+          APP_PATH=$(find build/ios -name "Runner.app" -type d | head -n 1)
+          
+          if [ -n "$APP_PATH" ]; then
+            echo "SUCCESS: Found app bundle at $APP_PATH. Packaging Member IPA..."
             mkdir -p build/ios/iphoneos/Member-Payload/Payload
-            cp -r build/ios/iphoneos/Runner.app build/ios/iphoneos/Member-Payload/Payload/
+            cp -r "$APP_PATH" build/ios/iphoneos/Member-Payload/Payload/
             cd build/ios/iphoneos/Member-Payload && zip -r ../SlimFitness-Member.ipa Payload
           else
-            echo "CRITICAL ERROR: Runner.app not found. Build truly failed."
+            echo "CRITICAL ERROR: Runner.app was not found anywhere in build/ios/"
+            find build/ios -maxdepth 4
             exit 1
           fi
 

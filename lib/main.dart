@@ -16,7 +16,7 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     ).timeout(const Duration(seconds: 5));
 
-    await ServerTimeService().init().timeout(const Duration(seconds: 5));
+    ServerTimeService().init();
     print("ELITE: System Initialization Successful.");
   } catch (e) {
     print("ELITE ERROR: Safe Boot triggered. Initialization failed: $e");
