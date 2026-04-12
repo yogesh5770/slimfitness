@@ -1,18 +1,23 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'theme.dart';
-import 'splash_view.dart';
-import 'server_time_service.dart';
-
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'notification_service.dart';
+import 'firebase_options_manual.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-  ServerTimeService().init();
+  
+  // ELITE BOOT LOGIC: Run App immediately to show 'Loading' state while Firebase initializes
   runApp(const SlimFitnessAdminApp());
+
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.getOptions('admin'),
+    ).timeout(const Duration(seconds: 5));
+
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    await ServerTimeService().init().timeout(const Duration(seconds: 5));
+    
+    print("ELITE: Admin System Initialization Successful.");
+  } catch (e) {
+    print("ELITE ERROR: Safe Boot triggered for Admin. Initialization failed: $e");
+  }
 }
 
 class SlimFitnessAdminApp extends StatelessWidget {

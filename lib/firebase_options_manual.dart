@@ -2,7 +2,7 @@ import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
 class DefaultFirebaseOptions {
-  static FirebaseOptions get currentPlatform {
+  static FirebaseOptions getOptions(String flavor) {
     if (kIsWeb) {
       throw UnsupportedError('DefaultFirebaseOptions has not been configured for web');
     }
@@ -10,7 +10,7 @@ class DefaultFirebaseOptions {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
-        return ios;
+        return flavor == 'admin' ? iosAdmin : iosMember;
       default:
         throw UnsupportedError('DefaultFirebaseOptions is not supported for this platform.');
     }
@@ -25,13 +25,23 @@ class DefaultFirebaseOptions {
     storageBucket: 'slimfit-5d2f6.firebasestorage.app',
   );
 
-  static const FirebaseOptions ios = FirebaseOptions(
+  static const FirebaseOptions iosAdmin = FirebaseOptions(
     apiKey: 'AIzaSyAgaTIivpwjQlMJ8H0hv9dGkd4VvO7dVo4',
     appId: '1:301096952142:ios:1c892cc13344752e1efe1f',
     messagingSenderId: '301096952142',
     projectId: 'slimfit-5d2f6',
     databaseURL: 'https://slimfit-5d2f6-default-rtdb.firebaseio.com',
     storageBucket: 'slimfit-5d2f6.firebasestorage.app',
-    iosBundleId: 'com.slimfitness.slimFitnessFlutter',
+    iosBundleId: 'com.slimfitness.admin',
+  );
+
+  static const FirebaseOptions iosMember = FirebaseOptions(
+    apiKey: 'AIzaSyAgaTIivpwjQlMJ8H0hv9dGkd4VvO7dVo4',
+    appId: '1:301096952142:ios:1c892cc13344752e1efe1f',
+    messagingSenderId: '301096952142',
+    projectId: 'slimfit-5d2f6',
+    databaseURL: 'https://slimfit-5d2f6-default-rtdb.firebaseio.com',
+    storageBucket: 'slimfit-5d2f6.firebasestorage.app',
+    iosBundleId: 'com.slimfitness.member',
   );
 }

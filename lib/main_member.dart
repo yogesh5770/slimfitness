@@ -1,20 +1,24 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'theme.dart';
-import 'splash_view.dart';
-import 'server_time_service.dart';
-
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'notification_service.dart';
-import 'step_service.dart';
+import 'firebase_options_manual.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(); // Will uncomment when google-services is linked
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-  ServerTimeService().init();
-  await StepService().init();
+  
+  // ELITE BOOT LOGIC: Run App immediately to show 'Loading' state while Firebase initializes
   runApp(const SlimFitnessMemberApp());
+
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.getOptions('member'),
+    ).timeout(const Duration(seconds: 5));
+
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    await ServerTimeService().init().timeout(const Duration(seconds: 5));
+    await StepService().init().timeout(const Duration(seconds: 5));
+    
+    print("ELITE: Member System Initialization Successful.");
+  } catch (e) {
+    print("ELITE ERROR: Safe Boot triggered for Member. Initialization failed: $e");
+  }
 }
 
 class SlimFitnessMemberApp extends StatelessWidget {
