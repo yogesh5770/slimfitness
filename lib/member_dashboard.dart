@@ -121,7 +121,7 @@ class _EliteHubViewState extends State<EliteHubView> {
   int _penalty = 0;
   int _streak = 0;
   int _waterCount = 0;
-  final _stepService = StepService();
+  // Step Service Removed as requested
   final _groq = GroqService();
 
   @override
@@ -134,37 +134,10 @@ class _EliteHubViewState extends State<EliteHubView> {
     final penalty = await _caloricLogic.getYesterdayPenalty();
     final streak = await _streakService.updateAndGetStreak();
     await _loadWater();
-    _checkStepCalibration();
     if (mounted) setState(() { _penalty = penalty; _streak = streak; });
   }
 
-  Future<void> _checkStepCalibration() async {
-    final uid = _auth.currentUser?.uid;
-    if (uid == null) return;
-
-    final vitalsSnap = await _database.child('users/$uid/vitals').get();
-    if (!vitalsSnap.exists) return;
-
-    final vitals = Map<String, dynamic>.from(vitalsSnap.value as Map);
-    if (vitals.containsKey('stepMultiplier')) return;
-
-    // Trigger AI Calibration for the first time or if missing
-    final weight = (vitals['weight'] as num?)?.toDouble() ?? 70.0;
-    final height = (vitals['height'] as num?)?.toDouble() ?? 170.0;
-    final age = (vitals['age'] as num?)?.toInt() ?? 25;
-
-    final factor = await _groq.getStepCalibrationFactor(
-      weightKg: weight,
-      heightCm: height,
-      age: age,
-    );
-
-    // Save to Cloud & Local Service
-    await _database.child('users/$uid/vitals/stepMultiplier').set(factor);
-    _stepService.updateMultiplier(factor);
-    
-    debugPrint("ELITE AI: Step Calibration Factor Set to $factor");
-  }
+  // Step Calibration Logic Removed
 
   Future<void> _loadWater() async {
     final uid = _auth.currentUser?.uid;
@@ -197,7 +170,7 @@ class _EliteHubViewState extends State<EliteHubView> {
           stream: _database.child('diet_logs/$uid/${_getDateKey()}').onValue,
           builder: (context, dietSnapshot) {
             return StreamBuilder<DatabaseEvent>(
-              stream: _database.child('steps/$uid/${_getDateKey()}').onValue,
+              stream: _database.child('steps/DISABLED').onValue, // Step tracking disabled
               builder: (context, stepSnapshot) {
                 return CustomScrollView(
                   physics: const BouncingScrollPhysics(),
@@ -271,15 +244,9 @@ class _EliteHubViewState extends State<EliteHubView> {
       }
     }
 
-    // Step Burn Adjustment
+    // Step Burn Adjustment Removed (Steps Disabled)
     int stepCount = 0;
     double stepBurn = 0;
-    if (stepSnap.hasData && stepSnap.data?.snapshot.value != null) {
-      final data = stepSnap.data!.snapshot.value as Map;
-      stepCount = (data['count'] ?? 0) as int;
-      stepBurn = (data['caloriesBurned'] ?? 0.0).toDouble();
-      consumed -= stepBurn.toInt(); 
-    }
 
     final baseTarget = (vitals['dailyCalorieTarget'] as num?)?.toInt() ?? 2000;
     final effectiveTarget = baseTarget - _penalty;
@@ -311,7 +278,7 @@ class _EliteHubViewState extends State<EliteHubView> {
                       const SizedBox(height: 4),
                       Text('AVAILABLE: ${effectiveTarget - consumed} kcal', style: TextStyle(color: Theme.of(context).primaryColor, fontSize: 10, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
-                      Text('🦶 $stepCount STEPS | -${stepBurn.toStringAsFixed(1)} KCAL REDUCED', style: const TextStyle(color: Colors.blueAccent, fontSize: 10, fontWeight: FontWeight.bold)),
+                      const Text('STEP TRACKING DISABLED', style: TextStyle(color: Colors.white10, fontSize: 8, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
@@ -512,27 +479,15 @@ class _EliteHubViewState extends State<EliteHubView> {
     final height = (vitals['height'] as num?)?.toDouble() ?? 170.0;
     final age = (vitals['age'] as num?)?.toInt() ?? 25;
 
-    final burn = await _groq.calculateWorkoutBurn(
-      workoutName: item['name'],
-      durationOrSets: item['isTimed'] ? "${item['minutes']} mins" : "${item['sets']}x${item['reps']}",
-      weightKg: weight,
-      heightCm: height,
-      age: age,
-    );
-
-    await _database.child('assigned_workouts/$uid/$key').update({'status': 'done', 'burn': burn});
+    // Mark Workout Done WITHOUT incorrect calorie calculation
+    await _database.child('assigned_workouts/$uid/$key').update({'status': 'done', 'burn': 0});
     
-    // Inject into history as Negative Calories
-    await _database.child('diet_logs/$uid/${_getDateKey()}/workouts/$key').set({
-      'name': 'ACTIVITY: ${item['name']}',
-      'calories': -burn,
-      'timestamp': ServerValue.timestamp,
-    });
+    // History injection for calories removed as requested
 
     if (mounted) {
       Navigator.pop(context); // Close loading
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('ELITE: WORKOUT FINISHED (+ BUILT IN BURN: -$burn kcal)'),
+        content: const Text('ELITE: WORKOUT FINISHED'),
         backgroundColor: Theme.of(context).primaryColor,
       ));
     }
@@ -581,7 +536,7 @@ class _EliteHubViewState extends State<EliteHubView> {
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ExerciseVideoView(exerciseName: item['name']!, videoUrl: item['link']!))),
                       title: Text(item['name'] ?? '', style: TextStyle(color: isDone ? Colors.white24 : Colors.white, fontWeight: FontWeight.bold)),
                       trailing: isDone 
-                        ? Text('-${item['burn']} kcal', style: const TextStyle(color: Colors.white24, fontWeight: FontWeight.bold))
+                        ? Icon(Icons.check_circle, color: Theme.of(context).primaryColor)
                         : TextButton(
                             onPressed: () => _finishWorkout(uid, key, item, vitals),
                             child: const Text('FINISH', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -772,19 +727,7 @@ class _FoodLoggerViewState extends State<FoodLoggerView> {
                return StreamBuilder<DatabaseEvent>(
                 stream: _db.child('steps/$uid/$dateKey').onValue,
                 builder: (context, stepSnap) {
-                  if (stepSnap.hasData && stepSnap.data?.snapshot.value != null) {
-                    final stepData = stepSnap.data!.snapshot.value as Map;
-                    final stepBurn = (stepData['caloriesBurned'] ?? 0.0).toDouble();
-                    if (stepBurn > 0) {
-                      if (!categorized.containsKey('activity')) categorized['activity'] = [];
-                      categorized['activity']!.add({
-                        'name': 'METABOLIC WALKING', 
-                        'calories': -stepBurn, 
-                        'amount': '${stepData['count'] ?? 0} steps',
-                        'protein': 0, 'carbs': 0, 'fats': 0
-                      });
-                    }
-                  }
+                  // Activity logs removed as requested
 
                   bool isEmpty = crystallizedEmpty(categorized);
                   if (isEmpty) return _buildEmptyState();

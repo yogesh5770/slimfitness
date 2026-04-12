@@ -20,7 +20,6 @@ void main() async {
 
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
     ServerTimeService().init(); // Synchronous call
-    
     print("ELITE: Admin System Initialization Successful.");
   } catch (e) {
     print("ELITE ERROR: Safe Boot triggered for Admin. Initialization failed: $e");

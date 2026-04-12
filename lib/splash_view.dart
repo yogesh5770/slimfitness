@@ -92,16 +92,22 @@ class _SplashViewState extends State<SplashView> {
 
           if (isCorrectFlavor) {
             if (role == 'admin' || isOwner) {
+              print("ELITE: Routing to Admin Dashboard.");
               Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const AdminDashboard()));
               return;
-            } else {
+            } else if (role == 'member') {
               if (status == 'approved') {
+                print("ELITE: Routing to Member Dashboard.");
                 Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const MemberDashboard()));
               } else {
+                print("ELITE: Routing to Pending Approval.");
                 Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const PendingApprovalView()));
               }
               return;
             }
+          } else {
+            print("ELITE ERROR: Identity/Flavor mismatch. Forcing logout to correct session.");
+            await auth.signOut();
           }
         }
       }

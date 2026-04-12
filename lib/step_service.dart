@@ -50,6 +50,9 @@ class StepService {
     _stepCountStream = Pedometer.stepCountStream.listen(_onStepCount, onError: _onStepCountError);
   }
 
+  int _lastSeenHardwareSteps = 0;
+  int _rebootOffset = 0;
+
   void _onStepCount(StepCount event) async {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return;
@@ -57,22 +60,28 @@ class StepService {
     final now = DateTime.now();
     final dateKey = "${now.year}-${now.month}-${now.day}";
 
-    // Logic: Pedometer returns total steps since boot.
-    // We only set a starting point if we DON'T already have one from the cloud today.
+    // 1. Detect Reboot: Hardware counter reset to 0
+    if (event.steps < _lastSeenHardwareSteps) {
+      _rebootOffset += _lastSeenHardwareSteps;
+      print("ELITE: Device reboot detected. Recalibrating offset: $_rebootOffset");
+    }
+    _lastSeenHardwareSteps = event.steps;
+
+    // 2. Establish Baseline if needed
     if (_startingSteps == null || _startingSteps == 0) {
-      // Check cloud one last time before setting a new baseline to prevent race conditions during updates
       final cloudSnap = await _db.child('steps/$uid/$dateKey/startingSteps').get();
       if (cloudSnap.exists && (cloudSnap.value as num) > 0) {
         _startingSteps = (cloudSnap.value as num).toInt();
       } else {
-        _startingSteps = event.steps;
+        _startingSteps = event.steps + _rebootOffset;
         await _db.child('steps/$uid/$dateKey/startingSteps').set(_startingSteps);
         print("ELITE: Established New Daily Step Baseline: $_startingSteps");
       }
     }
 
-    _todaySteps = event.steps - _startingSteps!;
-    if (_todaySteps < 0) _todaySteps = 0; // Guard against reboot resets
+    // 3. Calculate Today's Steps
+    _todaySteps = (event.steps + _rebootOffset) - _startingSteps!;
+    if (_todaySteps < 0) _todaySteps = 0; // Guard against minor drift
     
     // Sync to Cloud
     await _db.child('steps/$uid/$dateKey').update({

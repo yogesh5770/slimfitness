@@ -63,7 +63,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
       backgroundColor: const Color(0xFF080808),
       appBar: AppBar(
         centerTitle: true,
-        title: const Text('SLIM FITNESS', style: TextStyle(letterSpacing: 6, fontWeight: FontWeight.w900, fontSize: 18)),
+        title: Column(
+          children: [
+            const Text('SLIM FITNESS', style: TextStyle(letterSpacing: 6, fontWeight: FontWeight.w900, fontSize: 16)),
+            Text('ADMIN PORTAL', style: TextStyle(letterSpacing: 2, fontWeight: FontWeight.bold, fontSize: 9, color: Theme.of(context).primaryColor)),
+          ],
+        ),
       ),
       body: SafeArea(child: _pages[_currentIndex]),
       bottomNavigationBar: Container(

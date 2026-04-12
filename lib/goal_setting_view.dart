@@ -18,8 +18,10 @@ class _GoalSettingViewState extends State<GoalSettingView> {
   final _weightController = TextEditingController();
   final _heightController = TextEditingController();
   final _ageController = TextEditingController();
+  final _idealWeightController = TextEditingController();
   String _selectedGoal = 'maintenance';
   String _selectedGender = 'male';
+  String _selectedActivity = 'moderate';
   bool _isLoading = false;
 
   @override
@@ -39,8 +41,10 @@ class _GoalSettingViewState extends State<GoalSettingView> {
         _weightController.text = (data['weight'] ?? '').toString();
         _heightController.text = (data['height'] ?? '').toString();
         _ageController.text = (data['age'] ?? '').toString();
+        _idealWeightController.text = (data['idealWeight'] ?? '').toString();
         _selectedGoal = data['goal'] ?? 'maintenance';
         _selectedGender = data['gender'] ?? 'male';
+        _selectedActivity = data['activityLevel'] ?? 'moderate';
       });
     }
   }
@@ -49,6 +53,7 @@ class _GoalSettingViewState extends State<GoalSettingView> {
     final weight = double.tryParse(_weightController.text);
     final height = double.tryParse(_heightController.text);
     final age = int.tryParse(_ageController.text);
+    final idealWeight = double.tryParse(_idealWeightController.text) ?? 0.0;
 
     if (weight == null || height == null || age == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter valid numbers')));
@@ -66,6 +71,7 @@ class _GoalSettingViewState extends State<GoalSettingView> {
         age: age,
         isMale: _selectedGender == 'male',
         goal: _selectedGoal,
+        activityLevel: _selectedActivity,
       );
 
       final macros = VitalsService.calculateMacros(
@@ -80,6 +86,8 @@ class _GoalSettingViewState extends State<GoalSettingView> {
         'age': age,
         'gender': _selectedGender,
         'goal': _selectedGoal,
+        'activityLevel': _selectedActivity,
+        'idealWeight': idealWeight,
         'dailyCalorieTarget': calories,
         'proteinTarget': macros['protein'],
         'carbTarget': macros['carbs'],
@@ -136,13 +144,33 @@ class _GoalSettingViewState extends State<GoalSettingView> {
             _buildTextField(_ageController, 'e.g. 25', Icons.cake_outlined),
 
             const SizedBox(height: 32),
-            _buildInputLabel('GENDER'),
             Row(
               children: [
-                _buildChoiceChip('male', 'MALE'),
+                _buildChoiceChip('male', 'MALE', (v) => _selectedGender = v, _selectedGender),
                 const SizedBox(width: 12),
-                _buildChoiceChip('female', 'FEMALE'),
+                _buildChoiceChip('female', 'FEMALE', (v) => _selectedGender = v, _selectedGender),
               ],
+            ),
+
+            const SizedBox(height: 32),
+            _buildInputLabel('MANUAL IDEAL WEIGHT (KG)'),
+            _buildTextField(_idealWeightController, 'Optional target weight', Icons.star_border_rounded),
+
+            const SizedBox(height: 32),
+            _buildInputLabel('ACTIVITY LEVEL'),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildChoiceChip('sedentary', 'SEDENTARY', (v) => _selectedActivity = v, _selectedActivity),
+                  const SizedBox(width: 12),
+                  _buildChoiceChip('moderate', 'MODERATE', (v) => _selectedActivity = v, _selectedActivity),
+                  const SizedBox(width: 12),
+                  _buildChoiceChip('active', 'ACTIVE', (v) => _selectedActivity = v, _selectedActivity),
+                  const SizedBox(width: 12),
+                  _buildChoiceChip('athlete', 'ATHLETE', (v) => _selectedActivity = v, _selectedActivity),
+                ],
+              ),
             ),
 
             const SizedBox(height: 32),
@@ -209,18 +237,18 @@ class _GoalSettingViewState extends State<GoalSettingView> {
     );
   }
 
-  Widget _buildChoiceChip(String value, String label) {
-    bool isSelected = _selectedGender == value;
+  Widget _buildChoiceChip(String value, String label, Function(String) onSelect, String currentVal) {
+    bool isSelected = currentVal == value;
     return GestureDetector(
-      onTap: () => setState(() => _selectedGender = value),
+      onTap: () => setState(() => onSelect(value)),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         decoration: BoxDecoration(
           color: isSelected ? Theme.of(context).primaryColor : const Color(0xFF161B22),
           borderRadius: BorderRadius.circular(15),
           border: Border.all(color: isSelected ? Theme.of(context).primaryColor : Colors.white10),
         ),
-        child: Text(label, style: TextStyle(color: isSelected ? Colors.black : Colors.white38, fontWeight: FontWeight.bold, fontSize: 12)),
+        child: Text(label, style: TextStyle(color: isSelected ? Colors.black : Colors.white38, fontWeight: FontWeight.bold, fontSize: 11)),
       ),
     );
   }

@@ -22,6 +22,7 @@ class VitalsService {
     required int age,
     required bool isMale,
     required String goal,
+    String activityLevel = 'moderate',
   }) {
     // BMR Calculation
     double bmr;
@@ -31,8 +32,17 @@ class VitalsService {
       bmr = (10 * weight) + (6.25 * heightCm) - (5 * age) - 161;
     }
 
-    // TDEE (Total Daily Energy Expenditure) - Assuming Moderate Activity (1.55 multiplier)
-    double tdee = bmr * 1.55;
+    // TDEE Multipliers
+    double multiplier;
+    switch (activityLevel) {
+      case 'sedentary': multiplier = 1.2; break;
+      case 'lightly_active': multiplier = 1.375; break;
+      case 'active': multiplier = 1.725; break;
+      case 'athlete': multiplier = 1.9; break;
+      default: multiplier = 1.55; // moderate
+    }
+    
+    double tdee = bmr * multiplier;
 
     // Adjust based on goal
     if (goal == 'fat_loss') {

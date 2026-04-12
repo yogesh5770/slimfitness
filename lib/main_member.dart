@@ -4,7 +4,6 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:slim_fitness_flutter/splash_view.dart';
 import 'package:slim_fitness_flutter/theme.dart';
 import 'package:slim_fitness_flutter/server_time_service.dart';
-import 'package:slim_fitness_flutter/step_service.dart';
 import 'package:slim_fitness_flutter/notification_service.dart';
 import 'firebase_options_manual.dart';
 
@@ -20,8 +19,7 @@ void main() async {
     ).timeout(const Duration(seconds: 5));
 
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-    ServerTimeService().init(); // Synchronous call, no timeout needed
-    await StepService().init().timeout(const Duration(seconds: 5));
+    ServerTimeService().init(); 
     
     print("ELITE: Member System Initialization Successful.");
   } catch (e) {
