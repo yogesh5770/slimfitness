@@ -56,38 +56,31 @@ jobs:
 
       - name: "Build iOS - ADMIN"
         run: |
-          # 1. Prepare assets and AOT without Team ID check using Simulator target
-          flutter build ios --release --no-codesign --simulator -t lib/main_admin.dart --build-number=$GITHUB_RUN_NUMBER
+          # Force bypass all signing checks at the engine level
+          export CODE_SIGNING_ALLOWED=NO
+          export CODE_SIGNING_REQUIRED=NO
+          export PROVISIONING_PROFILE_SPECIFIER=""
           
-          # 2. Force Archive for Real Device bypassing Flutter's Team ID check
-          xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Release -sdk iphoneos \
-            BUNDLE_ID=com.slimfitness.admin \
-            DEVELOPMENT_TEAM=1234567890 \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" CODE_SIGN_ENTITLEMENTS="" \
-            clean archive -archivePath build/ios/iphoneos/Admin.xcarchive
+          # 1. Standard build (Now unblocked by the environment overrides and TargetAttribute fix)
+          flutter build ios --release --no-codesign -t lib/main_admin.dart --build-number=$GITHUB_RUN_NUMBER
           
-          # 3. Package IPA
+          # 2. Package IPA from built products
           mkdir -p build/ios/iphoneos/Admin-Payload/Payload
-          cp -r build/ios/iphoneos/Admin.xcarchive/Products/Applications/Runner.app build/ios/iphoneos/Admin-Payload/Payload/
+          cp -r build/ios/iphoneos/Runner.app build/ios/iphoneos/Admin-Payload/Payload/
           cd build/ios/iphoneos/Admin-Payload && zip -r ../SlimFitness-Admin.ipa Payload
 
       - name: "Build iOS - MEMBER"
         run: |
-          # 1. Pre-build for Simulator
-          flutter build ios --release --no-codesign --simulator -t lib/main_member.dart --build-number=$GITHUB_RUN_NUMBER
+          export CODE_SIGNING_ALLOWED=NO
+          export CODE_SIGNING_REQUIRED=NO
+          export PROVISIONING_PROFILE_SPECIFIER=""
           
-          # 2. Force Archive for Real Device
-          xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Release -sdk iphoneos \
-            BUNDLE_ID=com.slimfitness.member \
-            DEVELOPMENT_TEAM=1234567890 \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" CODE_SIGN_ENTITLEMENTS="" \
-            clean archive -archivePath build/ios/iphoneos/Member.xcarchive
+          # 1. Standard build
+          flutter build ios --release --no-codesign -t lib/main_member.dart --build-number=$GITHUB_RUN_NUMBER
           
-          # 3. Package IPA
+          # 2. Package IPA
           mkdir -p build/ios/iphoneos/Member-Payload/Payload
-          cp -r build/ios/iphoneos/Member.xcarchive/Products/Applications/Runner.app build/ios/iphoneos/Member-Payload/Payload/
+          cp -r build/ios/iphoneos/Runner.app build/ios/iphoneos/Member-Payload/Payload/
           cd build/ios/iphoneos/Member-Payload && zip -r ../SlimFitness-Member.ipa Payload
 
       - name: "Upload iOS Artifacts"
