@@ -1,0 +1,8 @@
+#include? "Generated.xcconfig"
+
+CODE_SIGNING_ALLOWED = NO
+CODE_SIGNING_REQUIRED = NO
+CODE_SIGN_STYLE = Manual
+PROVISIONING_PROFILE_SPECIFIER = 
+DEVELOPMENT_TEAM = 
+BUNDLE_ID = com.slimfitness.member
