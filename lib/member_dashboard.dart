@@ -769,15 +769,20 @@ class _FoodLoggerViewState extends State<FoodLoggerView> {
                 }
               }
 
-              return StreamBuilder<DatabaseEvent>(
+               return StreamBuilder<DatabaseEvent>(
                 stream: _db.child('steps/$uid/$dateKey').onValue,
                 builder: (context, stepSnap) {
                   if (stepSnap.hasData && stepSnap.data?.snapshot.value != null) {
                     final stepData = stepSnap.data!.snapshot.value as Map;
-                    final stepBurn = (stepData['caloriesBurned'] ?? 0.0) as double;
+                    final stepBurn = (stepData['caloriesBurned'] ?? 0.0).toDouble();
                     if (stepBurn > 0) {
                       if (!categorized.containsKey('activity')) categorized['activity'] = [];
-                      categorized['activity']!.add({'name': 'NATIVE HARDWARE WALKING', 'calories': -stepBurn, 'amount': '${stepData['count']} steps'});
+                      categorized['activity']!.add({
+                        'name': 'METABOLIC WALKING', 
+                        'calories': -stepBurn, 
+                        'amount': '${stepData['count'] ?? 0} steps',
+                        'protein': 0, 'carbs': 0, 'fats': 0
+                      });
                     }
                   }
 
@@ -824,7 +829,10 @@ class _FoodLoggerViewState extends State<FoodLoggerView> {
   }
 
   Widget _buildMealSection(String title, List<Map> items) {
-    int sectionTotal = items.fold(0, (sum, item) => sum + (item['calories'] as num).toInt());
+    int sectionTotal = items.fold(0, (sum, item) {
+      final cals = (item['calories'] ?? 0) as num;
+      return sum + cals.toInt();
+    });
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -847,7 +855,8 @@ class _FoodLoggerViewState extends State<FoodLoggerView> {
   }
 
   Widget _buildFoodCard(Map item) {
-    final isNegative = (item['calories'] as num) < 0;
+    final calories = (item['calories'] ?? 0) as num;
+    final isNegative = calories < 0;
     return FadeInUp(
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -863,7 +872,7 @@ class _FoodLoggerViewState extends State<FoodLoggerView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(item['name'].toString().toUpperCase(), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 1, color: isNegative ? Colors.blueAccent : Colors.white)),
+                  Text(item['name']?.toString().toUpperCase() ?? 'UNKNOWN FOOD', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 1, color: isNegative ? Colors.blueAccent : Colors.white)),
                   const SizedBox(height: 4),
                   Text(item['amount'] != null ? '${item['amount']}' : '', style: const TextStyle(color: Colors.white38, fontSize: 10)),
                 ],
@@ -872,9 +881,9 @@ class _FoodLoggerViewState extends State<FoodLoggerView> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text('${isNegative ? "" : "+"}${item['calories']} KCAL', style: TextStyle(color: isNegative ? Colors.blueAccent : Theme.of(context).primaryColor, fontWeight: FontWeight.w900, fontSize: 14)),
+                Text('${isNegative ? "" : "+"}${calories.toInt()} KCAL', style: TextStyle(color: isNegative ? Colors.blueAccent : Theme.of(context).primaryColor, fontWeight: FontWeight.w900, fontSize: 14)),
                 const SizedBox(height: 4),
-                Text('P: ${item['protein']}g | C: ${item['carbs']}g | F: ${item['fats']}g', style: const TextStyle(color: Colors.white24, fontSize: 9)),
+                Text('P: ${item['protein'] ?? 0}g | C: ${item['carbs'] ?? 0}g | F: ${item['fats'] ?? 0}g', style: const TextStyle(color: Colors.white24, fontSize: 9)),
               ],
             ),
           ],

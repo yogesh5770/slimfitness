@@ -36,8 +36,8 @@ class _SplashViewState extends State<SplashView> {
       rawId = iosDeviceInfo.identifierForVendor ?? 'unknown_device';
     } else if (Platform.isAndroid) {
       var androidDeviceInfo = await deviceInfo.androidInfo;
-      // Using combination for elite persistence across updates
-      rawId = "${androidDeviceInfo.brand}_${androidDeviceInfo.model}_${androidDeviceInfo.id}";
+      // ELITE: Triple-hardware verification for ultra-persistence
+      rawId = "${androidDeviceInfo.brand}_${androidDeviceInfo.model}_${androidDeviceInfo.hardware}_${androidDeviceInfo.id}";
     }
     return rawId.replaceAll(RegExp(r'[.#$\[\]]'), '_');
   }
@@ -55,11 +55,11 @@ class _SplashViewState extends State<SplashView> {
       return;
     }
 
-    // LEVEL 1: Firebase Auth Persistence
+    // LEVEL 1: Firebase Auth Persistence (Aggressive polling)
     int waitMs = 0;
-    while (auth.currentUser == null && waitMs < 1000) {
-      await Future.delayed(const Duration(milliseconds: 200));
-      waitMs += 200;
+    while (auth.currentUser == null && waitMs < 1500) {
+      await Future.delayed(const Duration(milliseconds: 250));
+      waitMs += 250;
     }
 
     final currentUser = auth.currentUser;
@@ -70,11 +70,13 @@ class _SplashViewState extends State<SplashView> {
         final String role = userData['role'] as String? ?? 'member';
         final String status = userData['status'] as String? ?? 'pending';
 
-        final bool isCorrectFlavor = (widget.isAdminEntryPoint && role == 'admin') || 
+        // Fix: Ensure Owner always has access to Admin Flavor
+        final bool isOwner = currentUser.email == 'slimfitness@gmail.com';
+        final bool isCorrectFlavor = (widget.isAdminEntryPoint && (role == 'admin' || isOwner)) || 
                                      (!widget.isAdminEntryPoint && role == 'member');
 
         if (isCorrectFlavor) {
-          if (role == 'admin') {
+          if (role == 'admin' || isOwner) {
             Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const AdminDashboard()));
             return;
           } else {
@@ -89,7 +91,7 @@ class _SplashViewState extends State<SplashView> {
       }
     }
 
-    // LEVEL 2: Cloud Device Binding (ELITE HANDSHAKE)
+    // LEVEL 2: Cloud Device Binding (ELITE HANDSHAKE RECOVERY)
     final deviceIdBase = await _getDeviceId();
     final sessionSnapshot = await dbRef.child('device_sessions/$deviceIdBase').get();
     
@@ -97,10 +99,12 @@ class _SplashViewState extends State<SplashView> {
       final sessionData = sessionSnapshot.value as Map<dynamic, dynamic>;
       final role = sessionData['role'] as String?;
       final sessionUid = sessionData['uid'] as String?;
+      final String email = sessionData['email'] as String? ?? '';
 
-      // Auto-relogin if session exists in cloud but local auth is gone (common in updates)
+      // ELITE PINNING: If device belongs to Owner, trust the sessionUid immediately across updates
       if (sessionUid != null) {
-        if (widget.isAdminEntryPoint && role == 'admin') {
+        if (widget.isAdminEntryPoint && (role == 'admin' || email == 'slimfitness@gmail.com')) {
+          print("ELITE: Session Pinning Recovered Admin Session for $email");
           Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const AdminDashboard()));
           return;
         } else if (!widget.isAdminEntryPoint && role == 'member') {

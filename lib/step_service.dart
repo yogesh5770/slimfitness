@@ -32,8 +32,9 @@ class StepService {
     if (userSnap.exists) _multiplier = (userSnap.value as num).toDouble();
 
     final stepSnap = await _db.child('steps/$uid/$dateKey/startingSteps').get();
-    if (stepSnap.exists) {
+    if (stepSnap.exists && (stepSnap.value as num) > 0) {
       _startingSteps = (stepSnap.value as num).toInt();
+      print("ELITE: Synced Step Baseline from Cloud: $_startingSteps");
     }
 
     // 2. Request Permission
@@ -56,11 +57,18 @@ class StepService {
     final now = DateTime.now();
     final dateKey = "${now.year}-${now.month}-${now.day}";
 
-    // Logic: Pedometer returns steps since boot.
-    // If we don't have a starting point for today, set this first count as the base.
+    // Logic: Pedometer returns total steps since boot.
+    // We only set a starting point if we DON'T already have one from the cloud today.
     if (_startingSteps == null || _startingSteps == 0) {
-      _startingSteps = event.steps;
-      await _db.child('steps/$uid/$dateKey/startingSteps').set(_startingSteps);
+      // Check cloud one last time before setting a new baseline to prevent race conditions during updates
+      final cloudSnap = await _db.child('steps/$uid/$dateKey/startingSteps').get();
+      if (cloudSnap.exists && (cloudSnap.value as num) > 0) {
+        _startingSteps = (cloudSnap.value as num).toInt();
+      } else {
+        _startingSteps = event.steps;
+        await _db.child('steps/$uid/$dateKey/startingSteps').set(_startingSteps);
+        print("ELITE: Established New Daily Step Baseline: $_startingSteps");
+      }
     }
 
     _todaySteps = event.steps - _startingSteps!;

@@ -33,13 +33,14 @@ class _LoginViewState extends State<LoginView> {
       rawId = iosDeviceInfo.identifierForVendor ?? 'unknown_device';
     } else if (Platform.isAndroid) {
       var androidDeviceInfo = await deviceInfo.androidInfo;
-      rawId = androidDeviceInfo.id; 
+      // ELITE: Triple-hardware verification for ultra-persistence
+      rawId = "${androidDeviceInfo.brand}_${androidDeviceInfo.model}_${androidDeviceInfo.hardware}_${androidDeviceInfo.id}";
     }
     return rawId.replaceAll(RegExp(r'[.#$\[\]]'), '_');
   }
 
   Future<void> _handleLogin() async {
-    final email = _emailController.text.trim();
+    final email = _emailController.text.trim().toLowerCase();
     final password = _passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
@@ -63,7 +64,12 @@ class _LoginViewState extends State<LoginView> {
           final uid = userCred.user?.uid ?? 'admin_user';
           
           // Save to Cloud Persistence (Our elite handshake)
-          await dbRef.child('device_sessions/$deviceId').set({'uid': uid, 'role': 'admin'});
+          await dbRef.child('device_sessions/$deviceId').set({
+            'uid': uid, 
+            'role': 'admin',
+            'email': email,
+            'lastLogin': ServerValue.timestamp
+          });
 
           if (!mounted) return;
           Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const AdminDashboard()));
@@ -76,7 +82,12 @@ class _LoginViewState extends State<LoginView> {
         final user = userCred.user;
         if (user != null) {
           // Save to Cloud Persistence (Our elite handshake)
-          await dbRef.child('device_sessions/$deviceId').set({'uid': user.uid, 'role': 'member'});
+          await dbRef.child('device_sessions/$deviceId').set({
+            'uid': user.uid, 
+            'role': 'member',
+            'email': user.email,
+            'lastLogin': ServerValue.timestamp
+          });
 
           final snapshot = await dbRef.child('users/${user.uid}/status').get();
           final status = snapshot.value as String?;
@@ -123,7 +134,12 @@ class _LoginViewState extends State<LoginView> {
         final role = widget.isAdminEntryPoint ? 'admin' : 'member';
         
         // Save to Cloud Persistence (Elite Handshake)
-        await dbRef.child('device_sessions/$deviceId').set({'uid': user.uid, 'role': role});
+        await dbRef.child('device_sessions/$deviceId').set({
+          'uid': user.uid, 
+          'role': role,
+          'email': user.email,
+          'lastLogin': ServerValue.timestamp
+        });
 
         // Check if user exists
         final snapshot = await dbRef.child('users/${user.uid}').get();
