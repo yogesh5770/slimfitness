@@ -1,3 +1,10 @@
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:slim_fitness_flutter/splash_view.dart';
+import 'package:slim_fitness_flutter/theme.dart';
+import 'package:slim_fitness_flutter/server_time_service.dart';
+import 'package:slim_fitness_flutter/notification_service.dart';
 import 'firebase_options_manual.dart';
 
 void main() async {
