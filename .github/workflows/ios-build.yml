@@ -1,15 +1,47 @@
-name: "Elite iOS Build (Windows Cloud Sync)"
+name: "Elite Universal Build (Android + iOS)"
 
 on:
   push:
     branches: [ "main", "master" ]
-  workflow_dispatch: # Allows manual trigger
+  workflow_dispatch:
 
 jobs:
-  build:
-    name: "Build iOS App"
+  build-android:
+    name: "Build Android APKs"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v4
+
+      - name: "Setup Java"
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: "Setup Flutter"
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: "Install Dependencies"
+        run: flutter pub get
+
+      - name: "Build Android - ADMIN"
+        run: flutter build apk --release -t lib/main_admin.dart --build-number=$GITHUB_RUN_NUMBER
+
+      - name: "Build Android - MEMBER"
+        run: flutter build apk --release -t lib/main_member.dart --build-number=$GITHUB_RUN_NUMBER
+
+      - name: "Upload APK Artifacts"
+        uses: actions/upload-artifact@v4
+        with:
+          name: SlimFitness-Android-APKs
+          path: build/app/outputs/flutter-apk/*.apk
+
+  build-ios:
+    name: "Build iOS IPAs"
     runs-on: macos-latest
-    
     steps:
       - name: "Checkout Repository"
         uses: actions/checkout@v4
@@ -24,33 +56,42 @@ jobs:
 
       - name: "Build iOS - ADMIN"
         run: |
-          flutter build ios --release --no-codesign -t lib/main_admin.dart --build-number=$GITHUB_RUN_NUMBER
+          # 1. Prepare assets and AOT without Team ID check using Simulator target
+          flutter build ios --release --no-codesign --simulator -t lib/main_admin.dart --build-number=$GITHUB_RUN_NUMBER
+          
+          # 2. Force Archive for Real Device bypassing Flutter's Team ID check
+          xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Release -sdk iphoneos \
+            BUNDLE_ID=com.slimfitness.admin \
+            DEVELOPMENT_TEAM=1234567890 \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" CODE_SIGN_ENTITLEMENTS="" \
+            clean archive -archivePath build/ios/iphoneos/Admin.xcarchive
+          
+          # 3. Package IPA
           mkdir -p build/ios/iphoneos/Admin-Payload/Payload
-          mv build/ios/iphoneos/Runner.app build/ios/iphoneos/Admin-Payload/Payload/
+          cp -r build/ios/iphoneos/Admin.xcarchive/Products/Applications/Runner.app build/ios/iphoneos/Admin-Payload/Payload/
           cd build/ios/iphoneos/Admin-Payload && zip -r ../SlimFitness-Admin.ipa Payload
 
       - name: "Build iOS - MEMBER"
         run: |
-          flutter build ios --release --no-codesign -t lib/main_member.dart --build-number=$GITHUB_RUN_NUMBER
+          # 1. Pre-build for Simulator
+          flutter build ios --release --no-codesign --simulator -t lib/main_member.dart --build-number=$GITHUB_RUN_NUMBER
+          
+          # 2. Force Archive for Real Device
+          xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Release -sdk iphoneos \
+            BUNDLE_ID=com.slimfitness.member \
+            DEVELOPMENT_TEAM=1234567890 \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" CODE_SIGN_ENTITLEMENTS="" \
+            clean archive -archivePath build/ios/iphoneos/Member.xcarchive
+          
+          # 3. Package IPA
           mkdir -p build/ios/iphoneos/Member-Payload/Payload
-          mv build/ios/iphoneos/Runner.app build/ios/iphoneos/Member-Payload/Payload/
+          cp -r build/ios/iphoneos/Member.xcarchive/Products/Applications/Runner.app build/ios/iphoneos/Member-Payload/Payload/
           cd build/ios/iphoneos/Member-Payload && zip -r ../SlimFitness-Member.ipa Payload
 
-      - name: "Build iOS Simulator - MEMBER"
-        run: |
-          flutter build ios --simulator --no-codesign -t lib/main_member.dart
-          # Debug: List all files if the build folder doesn't exist
-          if [ ! -d "build/ios/iphonesimulator/Runner.app" ]; then
-            echo "Build directory not found! Debugging structure..."
-            ls -R build/ios
-          fi
-          # Zip the simulator build
-          cd build/ios/iphonesimulator && zip -r ../../../SlimFitness-Member-Simulator.zip Runner.app
-
-      - name: "Upload Artifacts"
+      - name: "Upload iOS Artifacts"
         uses: actions/upload-artifact@v4
         with:
-          name: SlimFitness-V2-Simulator-Included
-          path: |
-            build/ios/iphoneos/*.ipa
-            *.zip
+          name: SlimFitness-iOS-IPAs
+          path: build/ios/iphoneos/*.ipa
