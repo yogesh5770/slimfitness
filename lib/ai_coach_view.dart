@@ -5,6 +5,9 @@ import 'package:firebase_database/firebase_database.dart';
 import 'groq_service.dart';
 import 'nutrition_service.dart';
 
+import 'package:speech_to_text/speech_to_text.dart';
+import 'package:permission_handler/permission_handler.dart';
+
 class AiCoachView extends StatefulWidget {
   const AiCoachView({super.key});
 
@@ -20,10 +23,46 @@ class _AiCoachViewState extends State<AiCoachView> {
   final NutritionService _nutritionService = NutritionService();
   String _userContext = "";
 
+  // Voice Engine
+  final SpeechToText _speech = SpeechToText();
+  bool _isListening = false;
+  String _voiceText = "";
+
   @override
   void initState() {
     super.initState();
     _loadUserContext();
+    _initSpeech();
+  }
+
+  void _initSpeech() async {
+    await _speech.initialize();
+  }
+
+  void _listen() async {
+    if (!_isListening) {
+      final status = await Permission.microphone.request();
+      if (status.isGranted) {
+        bool available = await _speech.initialize();
+        if (available) {
+          setState(() => _isListening = true);
+          _speech.listen(
+            onResult: (val) => setState(() {
+              _voiceText = val.recognizedWords;
+              _controller.text = _voiceText;
+            }),
+            localeId: 'ta_IN', // Support Tamil/English mixed
+            cancelOnError: true,
+          );
+        }
+      }
+    } else {
+      setState(() => _isListening = false);
+      _speech.stop();
+      if (_controller.text.isNotEmpty) {
+        _sendMessage();
+      }
+    }
   }
 
   void _loadUserContext() async {
@@ -277,16 +316,28 @@ class _AiCoachViewState extends State<AiCoachView> {
                     controller: _controller,
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
-                      hintText: 'Log food or ask about fitness...',
+                      hintText: _isListening ? 'Listening...' : 'Log food or ask about fitness...',
                       hintStyle: const TextStyle(color: Colors.white24),
                       filled: true,
                       fillColor: const Color(0xFF161B22),
+                      prefixIcon: _isListening 
+                        ? Pulse(infinite: true, child: Icon(Icons.mic_rounded, color: Theme.of(context).primaryColor, size: 20))
+                        : null,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(25), borderSide: BorderSide.none),
                     ),
                     onSubmitted: (_) => _sendMessage(),
                   ),
                 ),
                 const SizedBox(width: 12),
+                CircleAvatar(
+                  backgroundColor: _isListening ? Colors.redAccent : const Color(0xFF161B22),
+                  radius: 26,
+                  child: IconButton(
+                    icon: Icon(_isListening ? Icons.stop_rounded : Icons.mic_rounded, color: _isListening ? Colors.white : Theme.of(context).primaryColor),
+                    onPressed: _listen,
+                  ),
+                ),
+                const SizedBox(width: 8),
                 CircleAvatar(
                   backgroundColor: Theme.of(context).primaryColor,
                   radius: 26,

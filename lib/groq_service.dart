@@ -1,12 +1,29 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:firebase_database/firebase_database.dart';
 
 class GroqService {
+  static final GroqService _instance = GroqService._internal();
+  factory GroqService() => _instance;
+  GroqService._internal() {
+    _initCloudKey();
+  }
+
   static const String _baseUrl = 'https://api.groq.com/openai/v1/chat/completions';
-  static final String _apiKey = utf8.decode(base64.decode('WjNOclgxRXpYelphV2xOamVqQjNkbklKYTB0MmVEUk9WWRrZVdJekZsWjVaRmxzTlZkak4xVmpUemR0WW1OWmJWSWpNRU9HUnpOTVdsZGNqUT0='));
+  static final String _fallbackKey = utf8.decode(base64.decode('WjNOclgxRXpYelphV2xOamVqQjNkbklKYTB0MmVEUk9WWRrZVdJekZsWjVaRmxzTlZkak4xVmpUemR0WW1OWmJWSWpNRU9HUnpOTVdsZGNqUT0='));
+  static String _cloudKey = "";
   static const String _model = 'llama-3.1-8b-instant';
 
-  Future<String> getChatResponse(List<Map<String, String>> messages, {String userContext = ""}) async {
+  String get _apiKey => _cloudKey.isEmpty ? _fallbackKey : _cloudKey;
+
+  void _initCloudKey() {
+    FirebaseDatabase.instance.ref('config/keys/groq/apiKey').onValue.listen((event) {
+      if (event.snapshot.exists) {
+        _cloudKey = event.snapshot.value.toString();
+        print("ELITE: Groq Cloud Key Synced.");
+      }
+    });
+  }
     try {
       final response = await http.post(
         Uri.parse(_baseUrl),

@@ -9,6 +9,8 @@ import 'notification_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 
+import 'admin_config_view.dart';
+
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
 
@@ -23,6 +25,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     OwnerApprovalsView(),
     CategoryListView(isAdmin: true),
     AdminMembersView(),
+    AdminConfigView(),
     AdminFoodDbView(),
     BroadcastMessageView(),
   ];
@@ -44,7 +47,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         final isAdmin = data['isAdmin'] == true;
         final senderName = data['senderName'] as String? ?? 'Member';
 
-        if (!isAdmin && _currentIndex != 4) {
+        if (!isAdmin && _currentIndex != 5) {
           notificationService.showNotification(
             title: 'NEW MEMBER MESSAGE',
             body: '$senderName: ${data['text'] ?? 'New message'}',
@@ -76,14 +79,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
           selectedItemColor: Theme.of(context).primaryColor,
           unselectedItemColor: Colors.white24,
           type: BottomNavigationBarType.fixed,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 9),
-          unselectedLabelStyle: const TextStyle(fontSize: 9),
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 8),
+          unselectedLabelStyle: const TextStyle(fontSize: 8),
           items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.verified_user_rounded), label: 'APPROVE'),
-            BottomNavigationBarItem(icon: Icon(Icons.fitness_center_rounded), label: 'WORKOUT'),
-            BottomNavigationBarItem(icon: Icon(Icons.people_alt_rounded), label: 'MEMBERS'),
-            BottomNavigationBarItem(icon: Icon(Icons.restaurant_menu_rounded), label: 'FOOD DB'),
-            BottomNavigationBarItem(icon: Icon(Icons.forum_rounded), label: 'CHAT'),
+            BottomNavigationBarItem(icon: Icon(Icons.verified_user_rounded, size: 20), label: 'APPROVE'),
+            BottomNavigationBarItem(icon: Icon(Icons.fitness_center_rounded, size: 20), label: 'WORKOUT'),
+            BottomNavigationBarItem(icon: Icon(Icons.people_alt_rounded, size: 20), label: 'MEMBERS'),
+            BottomNavigationBarItem(icon: Icon(Icons.settings_suggest_rounded, size: 20), label: 'CONFIG'),
+            BottomNavigationBarItem(icon: Icon(Icons.restaurant_menu_rounded, size: 20), label: 'FOOD DB'),
+            BottomNavigationBarItem(icon: Icon(Icons.forum_rounded, size: 20), label: 'CHAT'),
           ],
         ),
       ),

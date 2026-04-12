@@ -9,7 +9,6 @@ import 'exercise_video_view.dart';
 import 'profile_view.dart';
 import 'notification_service.dart';
 import 'server_time_service.dart';
-import 'food_search_view.dart';
 import 'vitals_service.dart';
 import 'goal_setting_view.dart';
 import 'caloric_logic_service.dart';
@@ -708,17 +707,9 @@ class _FoodLoggerViewState extends State<FoodLoggerView> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('DIET CENTER', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2)),
-              Row(
-                children: [
-                  IconButton(
-                    icon: Icon(_isListening ? Icons.mic : Icons.mic_none, color: _isListening ? Colors.redAccent : null),
-                    onPressed: _isListening ? () => _speech.stop() : _startListening,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add_box_rounded),
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FoodSearchView())),
-                  ),
-                ],
+              IconButton(
+                icon: Icon(_isListening ? Icons.mic : Icons.mic_none, color: _isListening ? Colors.redAccent : null),
+                onPressed: _isListening ? () => _speech.stop() : _startListening,
               ),
             ],
           ),
