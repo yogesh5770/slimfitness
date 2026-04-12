@@ -24,16 +24,34 @@ jobs:
 
       - name: "Build iOS - ADMIN"
         run: |
-          flutter build ios --release --no-codesign -t lib/main_admin.dart --build-number=$GITHUB_RUN_NUMBER
+          # 1. Pre-build for Simulator (Skips Team ID Check)
+          flutter build ios --release --no-codesign --simulator -t lib/main_admin.dart --build-number=$GITHUB_RUN_NUMBER
+          
+          # 2. Archive for Real Device (Manual Overrides)
+          xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Release -sdk iphoneos \
+            BUNDLE_ID=com.slimfitness.admin \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" CODE_SIGN_ENTITLEMENTS="" \
+            clean archive -archivePath build/ios/iphoneos/Admin.xcarchive
+          
+          # 3. Package IPA
           mkdir -p build/ios/iphoneos/Admin-Payload/Payload
-          mv build/ios/iphoneos/Runner.app build/ios/iphoneos/Admin-Payload/Payload/
+          cp -r build/ios/iphoneos/Admin.xcarchive/Products/Applications/Runner.app build/ios/iphoneos/Admin-Payload/Payload/
           cd build/ios/iphoneos/Admin-Payload && zip -r ../SlimFitness-Admin.ipa Payload
 
       - name: "Build iOS - MEMBER"
         run: |
-          flutter build ios --release --no-codesign -t lib/main_member.dart --build-number=$GITHUB_RUN_NUMBER
+          # 1. Pre-build for Simulator (Skips Team ID Check)
+          flutter build ios --release --no-codesign --simulator -t lib/main_member.dart --build-number=$GITHUB_RUN_NUMBER
+          
+          # 2. Archive for Real Device (Manual Overrides)
+          xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Release -sdk iphoneos \
+            BUNDLE_ID=com.slimfitness.member \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" CODE_SIGN_ENTITLEMENTS="" \
+            clean archive -archivePath build/ios/iphoneos/Member.xcarchive
+          
+          # 3. Package IPA
           mkdir -p build/ios/iphoneos/Member-Payload/Payload
-          mv build/ios/iphoneos/Runner.app build/ios/iphoneos/Member-Payload/Payload/
+          cp -r build/ios/iphoneos/Member.xcarchive/Products/Applications/Runner.app build/ios/iphoneos/Member-Payload/Payload/
           cd build/ios/iphoneos/Member-Payload && zip -r ../SlimFitness-Member.ipa Payload
 
       - name: "Build iOS Simulator - MEMBER"
