@@ -24,6 +24,7 @@ class GroqService {
       }
     });
   }
+  Future<String> getChatResponse(List<Map<String, String>> messages, {String userContext = ""}) async {
     try {
       final response = await http.post(
         Uri.parse(_baseUrl),

@@ -79,4 +79,19 @@ class VitalsService {
       'fats': fatGrams,
     };
   }
+
+  /// Estimates Body Fat % using the Deurenberg Formula
+  static double calculateBodyFat(double bmi, int age, bool isMale) {
+    if (bmi <= 0) return 0;
+    int genderFactor = isMale ? 1 : 0;
+    return (1.20 * bmi) + (0.23 * age) - (10.8 * genderFactor) - 5.4;
+  }
+
+  /// Calculates Ideal Body Weight using the Devine Formula
+  static double calculateIdealWeight(double heightCm, bool isMale) {
+    if (heightCm < 152.4) return isMale ? 50.0 : 45.5; // Floor at 5ft
+    double inchesOver5ft = (heightCm - 152.4) / 2.54;
+    double baseWeight = isMale ? 50.0 : 45.5;
+    return baseWeight + (2.3 * inchesOver5ft);
+  }
 }

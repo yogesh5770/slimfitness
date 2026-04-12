@@ -337,6 +337,26 @@ class _EliteHubViewState extends State<EliteHubView> {
           ],
         ),
         const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildMiniMetric(
+                'FAT %',
+                '${VitalsService.calculateBodyFat(bmi, (vitals['age'] as num?)?.toInt() ?? 25, vitals['gender'] == 'male').toStringAsFixed(1)}%',
+                'ESTIMATED',
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildMiniMetric(
+                'IDEAL WT',
+                '${VitalsService.calculateIdealWeight((vitals['height'] as num?)?.toDouble() ?? 170.0, vitals['gender'] == 'male').toStringAsFixed(1)} kg',
+                'TARGET',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
         // Water + Streak + Weight Row
         Row(
           children: [
