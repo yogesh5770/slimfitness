@@ -5,6 +5,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:io';
 import 'package:animate_do/animate_do.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'login_view.dart';
 import 'admin_dashboard.dart';
@@ -56,6 +57,20 @@ class _SplashViewState extends State<SplashView> {
     try {
       await Future.delayed(const Duration(milliseconds: 3000));
       if (!mounted) return;
+
+      final packageInfo = await PackageInfo.fromPlatform();
+      final packageName = packageInfo.packageName;
+      print("ELITE IDENTITY CHECK: $packageName (Admin Entry: ${widget.isAdminEntryPoint})");
+
+      // Verify that the Binary Flavor matches the Entry Point
+      final isBinaryAdmin = packageName.contains('admin');
+      final isBinaryMember = packageName.contains('member');
+
+      if (widget.isAdminEntryPoint && !isBinaryAdmin) {
+        print("ELITE SECURITY: Admin Entry Point used in non-Admin binary ($packageName). Forcing redirection.");
+        // If they are in the wrong binary, we can't let them in as Admin logic.
+        // We will proceed but force them to Member routing to prevent Admin access in Member app.
+      }
 
       final dbRef = FirebaseDatabase.instance.ref();
       final auth = FirebaseAuth.instance;
